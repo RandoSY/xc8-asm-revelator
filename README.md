@@ -1,28 +1,44 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="XC8 ASM Revelator logo" width="900">
+</p>
+
 # XC8 ASM Revelator
 
 XC8 ASM Revelator is a read-only inspection tool for Microchip XC8 / PIC-AS
 compiler output. It parses `.lst`, `.s`, and `.asm` files and produces
 programmer-focused Markdown, JSON, and optional annotated listing reports.
 
-The tool is intended for firmware engineers who want to understand what XC8
-emitted, spot common conservative code-generation patterns, and review timing or
-flow-sensitive sections without rewriting compiler output automatically.
+Use it when you want to understand what XC8 emitted, spot conservative
+code-generation patterns, and review timing or flow-sensitive sections without
+blindly rewriting compiler output.
 
-## Features
+## What It Finds
 
-- Parses XC8/PIC-AS listing, assembly, and generated source files.
-- Reports instruction mix, rough static cycle estimates, labels, branches,
-  skips, calls, returns, and source-reference counts.
-- Detects repeated bank selects, repeated literal loads, branch-to-next-label
-  patterns, self branches, skip/double-goto structures, delay loops, and direct
-  self-calls.
-- Maps numeric SFR operands back to symbols when declarations are present in the
-  input.
-- Writes Markdown reports, optional JSON payloads, and optional annotated
-  listings.
-- Runs on Python 3.9+ with no third-party dependencies.
+- Repeated bank selects such as redundant `movlb` or `banksel` sequences.
+- Repeated literal loads into `W` with no intervening invalidation.
+- Branches that jump to the next label.
+- Self branches and direct self-calls.
+- Skip plus double-`goto` compiler structures.
+- Delay-loop signatures.
+- Numeric SFR operands that can be mapped back to symbols from declarations in
+  the listing.
+
+## Requirements
+
+- Python 3.9 or newer.
+- No third-party Python packages.
+- An XC8 / PIC-AS `.lst`, `.s`, or `.asm` file.
 
 ## Quick Start
+
+Clone the repository:
+
+```bash
+git clone https://github.com/RandoSY/xc8-asm-revelator.git
+cd xc8-asm-revelator
+```
+
+Run a standard review:
 
 ```bash
 python xc8_asm_revelator.py path/to/firmware.lst --annotate
@@ -33,13 +49,22 @@ By default this writes:
 - `firmware.lst.programmer_review.md`
 - `firmware.lst.annotated.lst` when `--annotate` is used
 
-To also write JSON:
+Write JSON for automation:
 
 ```bash
 python xc8_asm_revelator.py path/to/firmware.lst --json review.json
 ```
 
-## Command-Line Options
+Run a stricter review focused on the main program section:
+
+```bash
+python xc8_asm_revelator.py build/target.lst \
+  --min-severity STRONG \
+  --focus maintext \
+  --json audit.json
+```
+
+## Command-Line Reference
 
 ```text
 usage: xc8_asm_revelator.py [-h] [--report REPORT] [--json JSON]
@@ -50,36 +75,109 @@ usage: xc8_asm_revelator.py [-h] [--report REPORT] [--json JSON]
                             input
 ```
 
-- `input`: XC8/PIC-AS `.lst`, `.s`, or `.asm` file to inspect.
-- `--report`: Markdown output path. Defaults to
-  `<input>.programmer_review.md`.
-- `--json`: Optional machine-readable JSON output path.
-- `--annotate`: Write an annotated listing with review comments inserted before
-  flagged lines.
-- `--annotated-output`: Custom annotated listing output path.
-- `--min-severity`: Minimum finding severity: `INFO`, `WARN`, or `STRONG`.
-- `--focus`: Analysis scope: `program`, `maintext`, or `all`.
+| Argument | Description |
+|---|---|
+| `input` | XC8/PIC-AS `.lst`, `.s`, or `.asm` file to inspect. |
+| `--report` | Markdown output path. Defaults to `<input>.programmer_review.md`. |
+| `--json` | Optional machine-readable JSON output path. |
+| `--annotate` | Writes an annotated listing with review comments inserted before flagged lines. |
+| `--annotated-output` | Custom annotated listing output path. |
+| `--min-severity` | Minimum finding severity: `INFO`, `WARN`, or `STRONG`. |
+| `--focus` | Analysis scope: `program`, `maintext`, or `all`. |
 
-## Example Strict Review
+## Outputs
 
-```bash
-python xc8_asm_revelator.py build/target.lst \
-  --min-severity STRONG \
-  --focus maintext \
-  --json audit.json
+### Markdown Review
+
+The Markdown report is meant for human review. It includes:
+
+- Executive summary.
+- Instruction mix.
+- Register/SFR interpretation.
+- Source-line map when source references are available.
+- Findings with local assembly context and suggested action.
+
+### JSON Review
+
+The JSON report is meant for CI, dashboards, or later tooling. It contains a
+summary object and a list of structured findings.
+
+```json
+{
+  "summary": {
+    "physical_lines": 1442,
+    "instruction_lines": 37,
+    "rough_static_cycle_sum": 48.5
+  },
+  "findings": [
+    {
+      "severity": "WARN",
+      "category": "REPEATED_BANK_SELECT",
+      "line": 1024,
+      "message": "Repeated MOVLB 2."
+    }
+  ]
+}
 ```
+
+### Annotated Listing
+
+When `--annotate` is enabled, the tool writes a copy of the listing with review
+comments inserted immediately before flagged lines.
+
+```asm
+; -----------------------------------------------------------------------------
+; REVIEW WARN REPEATED_BANK_SELECT: Repeated MOVLB 2.
+; SOURCE: ../rotate.c:89
+; PARSED: movlb 2
+; WHY: Repeated bank selects can be compiler conservatism, but are sometimes required after uncertain flow.
+; DO: If no label/call/branch can enter between the two, the later bank select may be removable.
+; -----------------------------------------------------------------------------
+  1024     07E5  0182                  movlb   2
+```
+
+## Severity Levels
+
+| Severity | Meaning |
+|---|---|
+| `INFO` | Useful context or a common compiler pattern to review. |
+| `WARN` | Suspicious or potentially wasteful output that deserves human inspection. |
+| `STRONG` | Higher-confidence issue that is more likely to justify source or assembly review. |
+
+## Analysis Scope
+
+| Focus | Meaning |
+|---|---|
+| `program` | Default review scope for normal program listing sections. |
+| `maintext` | Narrows review to the primary main-text execution section. |
+| `all` | Reviews all recognized sections, including configuration and support blocks. |
+
+## Important Notes
+
+XC8 ASM Revelator is a static review helper. It does not prove runtime behavior,
+and its cycle estimates are orientation metrics rather than complete timing
+analysis. Loops, interrupts, oscillator configuration, skip paths, and linker
+layout all affect real execution.
+
+The tool does not rewrite firmware. Treat every finding as a prompt for careful
+review against the C source, generated assembly, datasheet, and target hardware.
 
 ## Documentation
 
-See [docs/operators_guide.md](docs/operators_guide.md) for a deeper explanation
-of the analysis pipeline, finding categories, and output formats.
+See [docs/operators_guide.md](docs/operators_guide.md) for the detailed operator
+guide, including parser architecture, finding categories, and output formats.
 
-## Notes
+## Contributing
 
-This is a static review helper. It does not prove runtime behavior, and its
-cycle estimates are orientation metrics rather than complete timing analysis.
-Always verify firmware changes against the target device, oscillator setup,
-interrupt behavior, and compiler/linker settings.
+Issues and pull requests are welcome. Useful contributions include:
+
+- Additional XC8/PIC-AS listing formats.
+- New static-analysis heuristics with examples.
+- Tests built from small, shareable listing snippets.
+- Documentation for known compiler output patterns.
+
+Generated `.lst`, `.hex`, `.elf`, review JSON, and annotated listing outputs are
+ignored by default so public commits stay focused on source and documentation.
 
 ## License
 
