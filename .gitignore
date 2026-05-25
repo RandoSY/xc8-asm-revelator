@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.venv/
+venv/
+env/
+
+# Test and tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Generated review output
+*.programmer_review.md
+*.annotated.lst
+*_review.md
+*_review.json
+smoke_review.*
+
+# XC8/MPLAB generated artifacts
+*.lst
+*.map
+*.hex
+*.elf
+*.cof
+*.o
+*.obj
+*.p1
+*.pre
+dist/
+build/
+debug/
+production/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local scratch/export folders from initial development
+00/
+Gemini/
+Open-AI/
+Test Run/
