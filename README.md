@@ -4,9 +4,12 @@
 
 # XC8 ASM Revelator
 
+Current release: **v3.6**.
+
 XC8 ASM Revelator is a read-only inspection tool for Microchip XC8 / PIC-AS
-compiler output. It parses `.lst`, `.s`, and `.asm` files and produces
-programmer-focused Markdown, JSON, and optional annotated listing reports.
+compiler output. It parses `.lst`, `.s`, and `.asm` files, can combine that
+with optional `.map` linker output, and produces programmer-focused Markdown,
+JSON, and optional annotated listing reports.
 
 Use it when you want to understand what XC8 emitted, spot conservative
 code-generation patterns, and review timing or flow-sensitive sections without
@@ -164,7 +167,7 @@ review against the C source, generated assembly, datasheet, and target hardware.
 
 ## Documentation
 
-See [docs/operators_guide.md](docs/operators_guide.md) for the detailed operator
+See [docs/operators_guide.md](docs/operators_guide.md) for the v3.6 operator
 guide, including parser architecture, finding categories, and output formats.
 
 ## Contributing
