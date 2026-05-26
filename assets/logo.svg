@@ -43,7 +43,6 @@
   <g transform="translate(424 72)">
     <text x="0" y="62" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" fill="#f3fbff">XC8 ASM</text>
     <text x="0" y="132" font-family="Segoe UI, Arial, sans-serif" font-size="58" font-weight="800" fill="url(#accent)">Revelator</text>
-    <rect x="4" y="168" width="610" height="3" rx="1.5" fill="url(#accent)" opacity="0.9"/>
     <text x="0" y="218" font-family="Segoe UI, Arial, sans-serif" font-size="26" fill="#b7d8df">Inspect PIC compiler output. Find the patterns. Keep control.</text>
   </g>
 </svg>
