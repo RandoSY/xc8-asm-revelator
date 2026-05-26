@@ -35,8 +35,6 @@
     <g transform="translate(134 50) rotate(-16)">
       <circle cx="86" cy="76" r="72" fill="url(#lens)" stroke="#ecfeff" stroke-width="12"/>
       <circle cx="65" cy="48" r="17" fill="#ffffff" opacity="0.58"/>
-      <rect x="142" y="132" width="112" height="30" rx="15" fill="#ecfeff"/>
-      <rect x="166" y="154" width="102" height="34" rx="17" fill="#4ee7b7"/>
     </g>
   </g>
 
